@@ -8,6 +8,8 @@ if mapping["numberUpDown"] == nil then
 		local self = GuiElement:new(target, custom_mt or NumberUpDownElement_mt)
 		self:include(IndexChangeSubjectMixin)
 		self:include(PlaySampleMixin)
+
+		self.roundDecimals = 1000
 		
 		self.isChecked = false
 		self.mouseEntered = false
@@ -119,10 +121,7 @@ if mapping["numberUpDown"] == nil then
 			if self.max ~= nil and (self.value + self.increment) > self.max then
 				self.value = self.max
 			else
-				self.value = self.value + self.increment
-			end
-			if self.value < 0.009 and self.value > -0.009 then
-				self.value = 0
+				self.value = MathUtil.round(self.value + self.increment, self.roundDecimals)
 			end
 		end
 		self:playSample(GuiSoundPlayer.SOUND_SAMPLES.SLIDER)
@@ -149,10 +148,7 @@ if mapping["numberUpDown"] == nil then
 			if self.min ~= nil and self.value - self.increment < self.min then
 				self.value = self.min
 			else
-				self.value = self.value - self.increment
-			end
-			if self.value < 0.009 and self.value > -0.009 then
-				self.value = 0
+				self.value = MathUtil.round(self.value - self.increment, self.roundDecimals)
 			end
 		end
 		self:playSample(GuiSoundPlayer.SOUND_SAMPLES.SLIDER)
@@ -341,11 +337,16 @@ if mapping["numberUpDown"] == nil then
 
 	function NumberUpDownElement:setValue(value, forceEvent)
 		if value ~= nil and type(value) == "number" then
+			local roundedValue = MathUtil.round(value, self.roundDecimals)
+			if roundedValue == 0 then
+				print("Error: The new value is to small.")
+				return
+			end
 			if self.min ~= nil then
-				value = math.max(value, self.min)
+				value = math.max(roundedValue, self.min)
 			end
 			if self.max ~= nil then
-				value = math.min(value, self.max)
+				value = math.min(roundedValue, self.max)
 			end
 			self.value = value
 			self:updateTextElement()
@@ -362,7 +363,12 @@ if mapping["numberUpDown"] == nil then
 
 	function NumberUpDownElement:setIncrement(increment)
 		if increment ~= nil and type(increment) == "number" and increment > 0 then
-			self.increment = increment
+			local roundedValue = MathUtil.round(increment, self.roundDecimals)
+			if roundedValue == 0 then
+				print("Error: The new value is to small.")
+				return
+			end
+			self.increment = roundedValue
 		end
 	end
 
@@ -372,8 +378,13 @@ if mapping["numberUpDown"] == nil then
 
 	function NumberUpDownElement:setMin(minValue)
 		if minValue ~= nil and type(minValue) == "number" and (self.max == nil or minValue < self.max) then
-			self.min = minValue
-			if self.value < minValue then
+			local roundedValue = MathUtil.round(minValue, self.roundDecimals)
+			if roundedValue == 0 then
+				print("Error: The new minValue is to small.")
+				return
+			end
+			self.min = roundedValue
+			if self.value < roundedValue then
 				self:setValue(self.min, true)
 				self:updateTextElement()
 			end
@@ -388,9 +399,14 @@ if mapping["numberUpDown"] == nil then
 
 	function NumberUpDownElement:setMax(maxValue)
 		if maxValue ~= nil and type(maxValue) == "number" and (self.min == nil or maxValue > self.min) then
-			self.max = maxValue
-			if self.value > maxValue then
-				self.value = maxValue
+			local roundedValue = MathUtil.round(maxValue, self.roundDecimals)
+			if roundedValue == 0 then
+				print("Error: The new maxValue is to small.")
+				return
+			end
+			self.max = roundedValue
+			if self.value > roundedValue then
+				self.value = roundedValue
 				self:updateTextElement()
 			end
 		else
